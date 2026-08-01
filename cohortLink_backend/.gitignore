@@ -1,0 +1,20 @@
+   # Ignore environment files with passwords
+    .env
+    .env.local
+    .env.*
+    
+    # Ignore Frontend build and node files
+    node_modules/
+    dist/
+    .npm/
+    
+    # Ignore Backend build files
+    build/
+    .gradle/
+    out/
+    target/
+    *.jar
+    
+    # Ignore IDE files
+    .idea/
+    .vscode/

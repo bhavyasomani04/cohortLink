@@ -1,0 +1,79 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.3.0'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	// Core Spring Boot starters
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
+
+	// Spatial / GIS support
+	implementation 'org.hibernate.orm:hibernate-spatial'
+	implementation 'org.locationtech.jts:jts-core:1.19.0'
+
+	// Geohash — geographic bucketing for Redis cache keys (nearby events / search)
+	implementation 'ch.hsr:geohash:1.4.0'
+
+	// Firebase Admin SDK — token verification
+	implementation 'com.google.firebase:firebase-admin:9.2.0'
+
+	// AWS SDK v2 — S3 presigned URLs
+	implementation 'software.amazon.awssdk:s3:2.25.60'
+	implementation 'software.amazon.awssdk:url-connection-client:2.25.60'
+
+	// Email — JavaMailSender for SMTP (Gmail / AWS SES / SendGrid relay)
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+	// Lombok
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	// Database
+	runtimeOnly 'org.postgresql:postgresql'
+
+	// Dev tools
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+	// Testing
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testCompileOnly 'org.projectlombok:lombok'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testAnnotationProcessor 'org.projectlombok:lombok'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+tasks.named('bootRun') {
+	def envFile = file('.env')
+	if (envFile.exists()) {
+		envFile.readLines().each { line ->
+			def trimLine = line.trim()
+			if (trimLine && !trimLine.startsWith('#') && trimLine.contains('=')) {
+				def parts = trimLine.split('=', 2)
+				environment parts[0].trim(), parts[1].trim()
+			}
+		}
+	}
+}

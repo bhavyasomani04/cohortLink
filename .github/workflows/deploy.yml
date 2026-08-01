@@ -1,0 +1,70 @@
+name: Deploy to AWS ECR and EC2
+
+on:
+  push:
+    branches:
+      - main # This pipeline triggers every time you push to the 'main' branch
+
+env:
+  AWS_REGION: ap-south-1 # Change this if your AWS region is different
+  ECR_REPOSITORY_FRONTEND: cohortlink-frontend
+  ECR_REPOSITORY_BACKEND: cohortlink-backend
+
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build, tag, and push Backend Image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: latest
+      run: |
+        cd cohortLink_backend/demo
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_BACKEND:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY_BACKEND:$IMAGE_TAG
+
+    - name: Build, tag, and push Frontend Image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: latest
+      run: |
+        cd cohortLink-frontend1
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG
+
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v1.0.3
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      with:
+        host: ${{ secrets.EC2_HOST_IP }}
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_KEY }}
+        envs: ECR_REGISTRY, AWS_REGION
+        script: |
+          # 1. Log the EC2 server into ECR so it has permission to pull
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+          
+          # 2. Navigate to your app directory (Assuming you created it)
+          cd ~/cohortLink
+          
+          # 3. Pull the fresh images we just built
+          docker-compose -f docker-compose.prod.yml pull
+          
+          # 4. Restart the containers with the new code
+          docker-compose -f docker-compose.prod.yml up -d

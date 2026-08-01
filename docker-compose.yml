@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  # This is the name of our database service
+  postgres-db:
+    image: postgis/postgis:15-3.3 # Uses a lightweight, fast-loading version of Postgres 15 with PostGIS
+    container_name: cohortLink_postgres # The name we see in Docker Desktop
+    environment:
+      POSTGRES_USER: postgres # Your database master username
+      POSTGRES_PASSWORD: yoursecurepassword # Your database password
+      POSTGRES_DB: cohortLinkdb # The name of the database created on startup
+    ports:
+      - "5432:5432" # Maps port 5432 on your computer to port 5432 inside the container
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Saves your database data on your hard drive so it doesn't delete when you stop Docker
+
+  # Redis — in-memory cache for event searches, club lists, and event detail
+  redis:
+    image: redis:7-alpine
+    container_name: cohortLink_redis
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data: # Declares the volume storage name
+  redis_data:
