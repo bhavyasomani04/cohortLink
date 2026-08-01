@@ -72,28 +72,42 @@ jobs:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+        AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}
         RDS_ENDPOINT: ${{ secrets.RDS_ENDPOINT }}
         RDS_PASSWORD: ${{ secrets.RDS_PASSWORD }}
+        EC2_HOST_IP: ${{ secrets.EC2_HOST_IP }}
+        MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+        MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+        FIREBASE_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
       with:
         host: ${{ secrets.EC2_HOST_IP }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_KEY }}
-        envs: ECR_REGISTRY, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_ACCOUNT_ID, RDS_ENDPOINT, RDS_PASSWORD
+        envs: ECR_REGISTRY, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_ACCOUNT_ID, AWS_S3_BUCKET_NAME, RDS_ENDPOINT, RDS_PASSWORD, EC2_HOST_IP, MAIL_USERNAME, MAIL_PASSWORD, FIREBASE_JSON
         script: |
           # 1. Log the EC2 server into ECR
           aws ecr get-login-password --region $AWS_REGION | sudo docker login --username AWS --password-stdin $ECR_REGISTRY
-          
+
           # 2. Navigate to your app directory
           cd ~/cohortLink
-          
-          # 3. Securely create the .env file for docker-compose
+
+          # 3. Write the Firebase service account JSON file
+          echo "$FIREBASE_JSON" > firebase-adminsdk.json
+
+          # 4. Write all secrets to the .env file for docker-compose
           echo "AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID" > .env
           echo "AWS_REGION=$AWS_REGION" >> .env
+          echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> .env
+          echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> .env
+          echo "AWS_S3_BUCKET_NAME=$AWS_S3_BUCKET_NAME" >> .env
           echo "RDS_ENDPOINT=$RDS_ENDPOINT" >> .env
           echo "RDS_PASSWORD=$RDS_PASSWORD" >> .env
-          
-          # 4. Pull the fresh images
+          echo "EC2_HOST_IP=$EC2_HOST_IP" >> .env
+          echo "MAIL_USERNAME=$MAIL_USERNAME" >> .env
+          echo "MAIL_PASSWORD=$MAIL_PASSWORD" >> .env
+
+          # 5. Pull the fresh images
           sudo docker compose -f docker-compose.prod.yml pull || sudo docker-compose -f docker-compose.prod.yml pull
-          
-          # 5. Restart the containers with the new code
+
+          # 6. Restart the containers
           sudo docker compose -f docker-compose.prod.yml up -d || sudo docker-compose -f docker-compose.prod.yml up -d
