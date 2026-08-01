@@ -42,8 +42,17 @@ jobs:
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         IMAGE_TAG: latest
+        EC2_HOST_IP: ${{ secrets.EC2_HOST_IP }}
       run: |
         cd cohortLink-frontend1
+        echo "VITE_FIREBASE_API_KEY=AIzaSyDobTgk1x3SUb5d9EFdlSQ49bU16VkPxhA" > .env.production
+        echo "VITE_FIREBASE_AUTH_DOMAIN=cohortlink.firebaseapp.com" >> .env.production
+        echo "VITE_FIREBASE_PROJECT_ID=cohortlink" >> .env.production
+        echo "VITE_FIREBASE_STORAGE_BUCKET=cohortlink.firebasestorage.app" >> .env.production
+        echo "VITE_FIREBASE_MESSAGING_SENDER_ID=139907391261" >> .env.production
+        echo "VITE_FIREBASE_APP_ID=1:139907391261:web:b1524e8bcd4952fda04bf4" >> .env.production
+        echo "VITE_MAPBOX_TOKEN=${{ secrets.VITE_MAPBOX_TOKEN }}" >> .env.production
+        echo "VITE_API_BASE_URL=http://${EC2_HOST_IP}:8080" >> .env.production
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG
 
