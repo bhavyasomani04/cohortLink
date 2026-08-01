@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: cohortLink_redis
+    ports:
+      - "6379:6379"
+    restart: always
+
+  backend:
+    image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/cohortlink-backend:latest
+    container_name: cohortLink_backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+    environment:
+      - DB_URL=jdbc:postgresql://${RDS_ENDPOINT}:5432/cohortLinkdb
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=${RDS_PASSWORD}
+    restart: always
+
+  frontend:
+    image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/cohortlink-frontend:latest
+    container_name: cohortLink_frontend
+    ports:
+      - "80:80" 
+    depends_on:
+      - backend
+    restart: always
